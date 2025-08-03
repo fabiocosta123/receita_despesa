@@ -19,7 +19,7 @@ const dados = [
 
 export default function GraficoTempoVida() {
   return (
-    <div style={{ width: '100%', height: 300 }}>
+    <div style={{ width: '100%', height: 300 }} className='bg-gradient-to-b from-purple-300 to-purple-500'>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={dados}
