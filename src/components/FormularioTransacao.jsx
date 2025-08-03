@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import FiltroTransacao from './FiltroTransacao';
 
 const FormularioTransacao = ({
@@ -9,7 +9,6 @@ const FormularioTransacao = ({
   energiaConsumida,
   setEnergiaConsumida,
   onAdicionarTransacao,
-  energiaRestante,
   receitas,
   despesas
 }) => {
@@ -17,14 +16,27 @@ const FormularioTransacao = ({
   const [valor, setValor] = useState('');
   const [tipo, setTipo] = useState('');
   const [filtro, setFiltro] = useState('todos');
+  const [erroCampos, setErroCampos] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('transacoes', JSON.stringify(transacoes));
   }, [transacoes]);
 
-  const calcularEnergiaDespesa = (valor) => {
-    const salarioHora = parseFloat(perfil.salario) / parseFloat(perfil.horas);
-    const horasEsforco = parseFloat(valor) / salarioHora;
+  const energiaRestante = useMemo(() => {
+    const total = parseFloat(energiaTotal ?? '0');
+    const consumida = parseFloat(energiaConsumida ?? '0');
+    return Math.max(0, total - consumida);
+  }, [energiaTotal, energiaConsumida]);
+
+  const calcularEnergiaDespesa = (valorNumerico) => {
+    const salario = parseFloat(perfil?.salario ?? '0');
+    const horas = parseFloat(perfil?.horas ?? '1'); // evita divisão por zero
+    const peso = parseFloat(perfil?.peso ?? '70');
+
+    if (isNaN(salario) || isNaN(horas) || isNaN(peso) || isNaN(valorNumerico)) return 0;
+
+    const salarioHora = salario / horas;
+    const horasEsforco = valorNumerico / salarioHora;
 
     const taxaPorNivel = {
       sedentario: 1.3,
@@ -32,22 +44,30 @@ const FormularioTransacao = ({
       intenso: 3.8
     };
 
-    const nivelAtividade = 'moderado'; // futuramente pode vir do perfil
+    const nivelAtividade = 'moderado'; // pode futuramente vir do perfil
     const taxa = taxaPorNivel[nivelAtividade];
-    const energiaPorHora = taxa * (parseFloat(perfil.peso ?? 70));
+    const energiaPorHora = taxa * peso;
+
     return horasEsforco * energiaPorHora;
   };
 
   const handleAdicionar = (e) => {
     e.preventDefault();
-    if (!nome || !valor || !tipo) return;
 
-    const energiaGasta = tipo === 'despesa' ? calcularEnergiaDespesa(valor) : 0;
+    const valorNumerico = parseFloat(valor);
+    if (!nome || !valor || isNaN(valorNumerico) || !tipo) {
+      setErroCampos(true);
+      return;
+    }
+
+    setErroCampos(false); // limpa erro se estiver tudo certo
+
+    const energiaGasta = tipo === 'despesa' ? calcularEnergiaDespesa(valorNumerico) : 0;
 
     const novaTransacao = {
       id: Date.now(),
       nome,
-      valor: parseFloat(valor),
+      valor: valorNumerico,
       tipo,
       energiaGasta
     };
@@ -57,22 +77,22 @@ const FormularioTransacao = ({
     if (tipo === 'despesa') {
       setEnergiaConsumida(prev => prev + energiaGasta);
 
-      // ⚠️ Meta semanal (2% da energia total)
-      const metaSemanal = energiaTotal * 0.02;
-      if (energiaConsumida + energiaGasta > metaSemanal) {
+      const metaSemanal = (energiaTotal ?? 0) * 0.02;
+      if ((energiaConsumida ?? 0) + energiaGasta > metaSemanal) {
         alert("⚠️ Essa despesa ultrapassa sua meta de energia financeira semanal!");
       }
     }
 
-      setNome('');
-      setValor('');
-      setTipo('');
-    };
+    setNome('');
+    setValor('');
+    setTipo('');
+  };
 
   const handleRemover = (id) => {
     const removida = transacoes.find(t => t.id === id);
     const novas = transacoes.filter(t => t.id !== id);
     setTransacoes(novas);
+
     if (removida?.tipo === 'despesa') {
       setEnergiaConsumida(prev => prev - removida.energiaGasta);
     }
@@ -83,19 +103,23 @@ const FormularioTransacao = ({
       <h2 className="text-3xl font-bold text-center mb-6">CONTROLE DE DESPESAS</h2>
 
       <div className="w-full max-w-xl mb-4 bg-white rounded-lg p-4 shadow-md">
-        <div className="flex justify-between">
+        <div className="flex justify-between flex-wrap gap-4">
           <div>
             <h4 className="text-sm uppercase mb-1">Saldo Atual</h4>
             <p className="text-green-600 font-bold text-xl">R$ {(receitas - despesas).toFixed(2)}</p>
           </div>
           <div>
-            <h4 className="text-sm uppercase mb-1">Energia Vital Total</h4>
-            <p className="text-yellow-600 font-bold text-xl">⚡ {energiaRestante.toLocaleString()} kcal</p>
+            <h4 className="text-sm uppercase mb-1">Energia Total</h4>
+            <p className="text-yellow-600 font-bold text-xl">⚡ {(energiaTotal ?? 0).toLocaleString()} kcal</p>
+          </div>
+          <div>
+            <h4 className="text-sm uppercase mb-1">Energia Restante</h4>
+            <p className="text-blue-600 font-bold text-xl">🌟 {energiaRestante.toLocaleString()} kcal</p>
           </div>
         </div>
       </div>
 
-      <div className="w-full max-w-xl mb-4 bg-white rounded-lg p-4 shadow-md flex justify-between">
+      <div className="w-full max-w-xl mb-4 bg-white rounded-lg p-4 shadow-md flex justify-between flex-wrap gap-4">
         <div>
           <h4 className="text-sm uppercase mb-1">Receitas</h4>
           <p className="text-green-600 font-bold text-lg">R$ {receitas.toFixed(2)}</p>
@@ -113,7 +137,13 @@ const FormularioTransacao = ({
       <div className="w-full max-w-xl bg-white rounded-lg p-6 shadow-lg">
         <h3 className="text-lg font-bold mb-4">Adicionar transação</h3>
         <form className="space-y-4" onSubmit={handleAdicionar}>
-                    <input
+          {erroCampos && (
+            <div className="bg-red-100 text-red-700 border border-red-300 px-3 py-2 rounded">
+              ⚠️ Preencha todos os campos com valores válidos!
+            </div>
+          )}
+
+          <input
             type="text"
             value={nome}
             onChange={e => setNome(e.target.value)}
@@ -138,7 +168,7 @@ const FormularioTransacao = ({
             <div className="flex gap-2">
               <button
                 type="button"
-                className={`px-3 py-1 text-white rounded ${
+                className={`px-3 py-1 text-white rounded cursor-pointer ${
                   tipo === 'receita' ? 'bg-green-600' : 'bg-green-500 hover:bg-green-600'
                 }`}
                 onClick={() => setTipo('receita')}
@@ -147,7 +177,7 @@ const FormularioTransacao = ({
               </button>
               <button
                 type="button"
-                className={`px-3 py-1 text-white rounded ${
+                className={`px-3 py-1 text-white rounded cursor-pointer ${
                   tipo === 'despesa' ? 'bg-red-600' : 'bg-red-500 hover:bg-red-600'
                 }`}
                 onClick={() => setTipo('despesa')}
@@ -159,17 +189,15 @@ const FormularioTransacao = ({
 
           <button
             type="submit"
-            className="w-full bg-purple-600 text-white font-bold py-2 rounded hover:bg-purple-700 transition"
+            className="w-full bg-purple-600 text-white font-bold py-2 rounded hover:bg-purple-700 transition cursor-pointer"
           >
             Adicionar Transação
           </button>
         </form>
 
-        {/* Filtro de tipo de transação */}
-        <div className="mt-8">
+                <div className="mt-8">
           <h3 className="text-lg font-bold mb-2">Transações recentes</h3>
           <FiltroTransacao filtro={filtro} setFiltro={setFiltro} />
-
           <ul className="mt-4 space-y-2">
             {transacoes
               .filter(t => filtro === 'todos' || t.tipo === filtro)
@@ -182,14 +210,14 @@ const FormularioTransacao = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleRemover(t.id)}
-                      className="text-red-500 hover:text-red-700 font-bold"
+                      className="text-red-500 hover:text-red-700 font-bold cursor-pointer"
                     >
                       ❌
                     </button>
                     <div>
                       <p className="font-semibold text-sm">{t.nome}</p>
                       <small className="text-gray-500">
-                        {t.tipo === 'receita' ? 'Receita' : 'Despesa'} • 🔥 {t.energiaGasta.toFixed(2)} kcal
+                        {t.tipo === 'receita' ? 'Receita' : 'Despesa'} • 🔥 {t.energiaGasta?.toFixed(2) ?? '0.00'} kcal
                       </small>
                     </div>
                   </div>
@@ -198,7 +226,7 @@ const FormularioTransacao = ({
                       t.tipo === 'receita' ? 'text-green-600' : 'text-red-600'
                     }`}
                   >
-                    R$ {t.valor.toFixed(2)}
+                    R$ {t.valor?.toFixed(2) ?? '0.00'}
                   </p>
                 </li>
               ))}
