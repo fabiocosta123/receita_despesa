@@ -2,6 +2,8 @@
 
 Este é um projeto pessoal que une finanças com propósito: uma aplicação que ajuda você a visualizar o impacto energético de cada transação financeira, promovendo o uso consciente do dinheiro e da sua energia vital.
 
+Deploy:  https://receita-despesa.vercel.app/
+
 ---
 
 ## 🎯 Objetivo
@@ -57,3 +59,5 @@ npm install
 
 # Rode o servidor de desenvolvimento
 npm run dev
+
+
