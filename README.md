@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💡 Controle Financeiro da Vida
 
-## Getting Started
+Este é um projeto pessoal que une finanças com propósito: uma aplicação que ajuda você a visualizar o impacto energético de cada transação financeira, promovendo o uso consciente do dinheiro e da sua energia vital.
 
-First, run the development server:
+---
+
+## 🎯 Objetivo
+
+A proposta é simples e poderosa: transformar o controle financeiro em uma ferramenta de autoconhecimento. Cada despesa ou receita é convertida em **kcal**, representando a energia que você consome ou ao realizar aquela transação.
+🧠 Interpretação
+Despesa → representa esforço, desgaste, consumo de energia vital → 2 kcal por R$1 (ou unidade de valor)
+
+Receita → representa ganho, alívio, recuperação de energia → 0.5 kcal por R$1
+
+Essa lógica é conceitual, não baseada em dados clínicos ou nutricionais. Ela serve para visualizar o impacto emocional e energético das decisões financeiras, e estimular o uso consciente do dinheiro.
+
+> 💬 “Dinheiro é energia em movimento. Saber como você o usa é saber como você vive.”
+
+---
+
+## 🧠 Conceito
+
+- Cada pessoa tem uma **expectativa de vida energética** baseada em idade, peso, tipo de trabalho e postura.
+- Ao gastar dinheiro, você consome energia vital.
+- Ao receber dinheiro, você recupera parte dessa energia.
+- O app mostra sua **energia restante**, ajudando você a refletir sobre o impacto de cada escolha financeira.
+
+---
+
+## 🛠️ Tecnologias utilizadas
+
+- **Next.js** – Framework React moderno com suporte a SSR e rotas dinâmicas
+- **Tailwind CSS** – Estilização rápida e responsiva com classes utilitárias
+- **React Toastify** – Feedback visual com toasts elegantes
+- **PWA (Progressive Web App)** – Instalação como app nativo no celular, sem precisar da Play Store
+- **NanoID** – Geração de IDs únicos para transações
+- **LocalStorage** – Persistência de dados no navegador
+
+---
+
+## 📱 Funcionalidades
+
+- Cadastro de transações (receitas e despesas)
+- Cálculo de energia gasta ou recuperada por transação
+- Perfil personalizado com dados físicos e profissionais
+- Visualização da energia restante
+- Alertas quando a meta semanal de energia é ultrapassada
+- Interface responsiva e instalável como app (PWA)
+
+---
+
+## 🚀 Como rodar o projeto
 
 ```bash
+# Instale as dependências
+npm install
+
+# Rode o servidor de desenvolvimento
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
