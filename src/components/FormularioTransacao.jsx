@@ -1,5 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import { toast } from 'react-toastify';
+import { nanoid } from 'nanoid'
 import FiltroTransacao from './FiltroTransacao';
+
 
 const FormularioTransacao = ({
   perfil,
@@ -18,22 +21,20 @@ const FormularioTransacao = ({
   const [filtro, setFiltro] = useState('todos');
   const [erroCampos, setErroCampos] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem('transacoes', JSON.stringify(transacoes));
-  }, [transacoes]);
-
+  // 🔋 Energia restante sempre atualizada
   const energiaRestante = useMemo(() => {
     const total = parseFloat(energiaTotal ?? '0');
     const consumida = parseFloat(energiaConsumida ?? '0');
     return Math.max(0, total - consumida);
   }, [energiaTotal, energiaConsumida]);
 
+  // 🧮 Cálculo de energia por despesa real
   const calcularEnergiaDespesa = (valorNumerico) => {
     const salario = parseFloat(perfil?.salario ?? '0');
-    const horas = parseFloat(perfil?.horas ?? '1'); // evita divisão por zero
+    const horas = parseFloat(perfil?.horas ?? '1');
     const peso = parseFloat(perfil?.peso ?? '70');
 
-    if (isNaN(salario) || isNaN(horas) || isNaN(peso) || isNaN(valorNumerico)) return 0;
+    if ([salario, horas, peso, valorNumerico].some(v => isNaN(v) || v <= 0)) return 0;
 
     const salarioHora = salario / horas;
     const horasEsforco = valorNumerico / salarioHora;
@@ -44,57 +45,70 @@ const FormularioTransacao = ({
       intenso: 3.8
     };
 
-    const nivelAtividade = 'moderado'; // pode futuramente vir do perfil
+    const nivelAtividade = 'moderado'; // pode vir do perfil futuramente
     const taxa = taxaPorNivel[nivelAtividade];
     const energiaPorHora = taxa * peso;
 
     return horasEsforco * energiaPorHora;
   };
 
-  const handleAdicionar = (e) => {
-    e.preventDefault();
+  // ➕ Adiciona nova transação
+ 
 
-    const valorNumerico = parseFloat(valor);
-    if (!nome || !valor || isNaN(valorNumerico) || !tipo) {
-      setErroCampos(true);
-      return;
-    }
+const handleAdicionar = (e) => {
+  e.preventDefault();
 
-    setErroCampos(false); // limpa erro se estiver tudo certo
+  const valorNumerico = parseFloat(valor);
+  const tipoFormatado = tipo?.toLowerCase().trim() || 'receita'; // valor padrão garantido
 
-    const energiaGasta = tipo === 'despesa' ? calcularEnergiaDespesa(valorNumerico) : 0;
+  // Validação de campos
+  if (!nome || isNaN(valorNumerico) || !tipoFormatado) {
+    setErroCampos(true);
+    toast.error("Preencha todos os campos corretamente.");
+    return;
+  }
+  setErroCampos(false);
 
-    const novaTransacao = {
-      id: Date.now(),
-      nome,
-      valor: valorNumerico,
-      tipo,
-      energiaGasta
-    };
+  const energiaGasta =
+    tipoFormatado === 'despesa'
+      ? valorNumerico * 2
+      : valorNumerico * 0.5;
 
-    onAdicionarTransacao(novaTransacao);
-
-    if (tipo === 'despesa') {
-      setEnergiaConsumida(prev => prev + energiaGasta);
-
-      const metaSemanal = (energiaTotal ?? 0) * 0.02;
-      if ((energiaConsumida ?? 0) + energiaGasta > metaSemanal) {
-        alert("⚠️ Essa despesa ultrapassa sua meta de energia financeira semanal!");
-      }
-    }
-
-    setNome('');
-    setValor('');
-    setTipo('');
+  const novaTransacao = {
+    id: nanoid(),
+    nome,
+    valor: valorNumerico,
+    tipo: tipoFormatado,
+    energiaGasta
   };
 
+  onAdicionarTransacao(novaTransacao);
+
+  // Atualiza energia se for despesa
+  if (tipoFormatado === 'despesa') {
+    const novaEnergia = energiaConsumida + energiaGasta;
+    setEnergiaConsumida(novaEnergia);
+
+    const metaSemanal = (energiaTotal ?? 0) * 0.02;
+    if (novaEnergia > metaSemanal) {
+      toast.warn("⚠️ Essa despesa ultrapassa sua meta de energia semanal!");
+    }
+  }
+
+  // Limpa os campos
+  setNome('');
+  setValor('');
+  setTipo('receita'); // valor inicial garantido
+};
+
+  // ❌ Remove transação e atualiza energia
   const handleRemover = (id) => {
     const removida = transacoes.find(t => t.id === id);
     const novas = transacoes.filter(t => t.id !== id);
     setTransacoes(novas);
 
-    if (removida?.tipo === 'despesa') {
-      setEnergiaConsumida(prev => prev - removida.energiaGasta);
+    if (!isNaN(removida?.energiaGasta)) {
+      setEnergiaConsumida(prev => Math.max(0, prev - removida.energiaGasta));
     }
   };
 
@@ -102,6 +116,7 @@ const FormularioTransacao = ({
     <div className="min-h-screen flex flex-col items-center bg-gradient-to-b from-purple-300 to-purple-500 px-4 py-6 text-black font-sans">
       <h2 className="text-3xl font-bold text-center mb-6">CONTROLE DE DESPESAS</h2>
 
+      {/* ⚡ Painel de energia */}
       <div className="w-full max-w-xl mb-4 bg-white rounded-lg p-4 shadow-md">
         <div className="flex justify-between flex-wrap gap-4">
           <div>
@@ -119,6 +134,7 @@ const FormularioTransacao = ({
         </div>
       </div>
 
+      {/* 💰 Painel financeiro */}
       <div className="w-full max-w-xl mb-4 bg-white rounded-lg p-4 shadow-md flex justify-between flex-wrap gap-4">
         <div>
           <h4 className="text-sm uppercase mb-1">Receitas</h4>
@@ -134,12 +150,13 @@ const FormularioTransacao = ({
         </div>
       </div>
 
+      {/* 🧾 Formulário de transação */}
       <div className="w-full max-w-xl bg-white rounded-lg p-6 shadow-lg">
         <h3 className="text-lg font-bold mb-4">Adicionar transação</h3>
         <form className="space-y-4" onSubmit={handleAdicionar}>
           {erroCampos && (
             <div className="bg-red-100 text-red-700 border border-red-300 px-3 py-2 rounded">
-              ⚠️ Preencha todos os campos com valores válidos!
+              ⚠️ Preencha todos os campos corretamente.
             </div>
           )}
 
@@ -152,39 +169,39 @@ const FormularioTransacao = ({
             autoFocus
           />
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Valor</label>
-            <input
-              type="number"
-              value={valor}
-              onChange={e => setValor(e.target.value)}
-              placeholder="Valor da transação"
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-purple-400"
-            />
-          </div>
+          <input
+            type="number"
+            value={valor}
+            onChange={e => setValor(e.target.value)}
+            placeholder="Valor da transação"
+            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-purple-400"
+          />
 
           <div>
             <label className="block text-sm font-medium mb-1">Tipo</label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-2">
               <button
-                type="button"
-                className={`px-3 py-1 text-white rounded cursor-pointer ${
-                  tipo === 'receita' ? 'bg-green-600' : 'bg-green-500 hover:bg-green-600'
+                className={`px-5 py-2 rounded font-bold transition-colors duration-300 ${
+                  tipo === 'receita'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-green-400 text-gray-700 hover:bg-green-200 cursor-pointer'
                 }`}
                 onClick={() => setTipo('receita')}
               >
-                Receita
+                Receita 💰
               </button>
               <button
-                type="button"
-                className={`px-3 py-1 text-white rounded cursor-pointer ${
-                  tipo === 'despesa' ? 'bg-red-600' : 'bg-red-500 hover:bg-red-600'
+                className={`px-5 py-2 rounded font-bold transition-colors duration-300 ${
+                  tipo === 'despesa'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-red-400 text-gray-700 hover:bg-red-200 cursor-pointer'
                 }`}
                 onClick={() => setTipo('despesa')}
               >
-                Despesa
+                Despesa 🔥
               </button>
             </div>
+
           </div>
 
           <button
@@ -195,7 +212,8 @@ const FormularioTransacao = ({
           </button>
         </form>
 
-                <div className="mt-8">
+                {/* 🧾 Lista de transações */}
+        <div className="mt-8">
           <h3 className="text-lg font-bold mb-2">Transações recentes</h3>
           <FiltroTransacao filtro={filtro} setFiltro={setFiltro} />
           <ul className="mt-4 space-y-2">
@@ -210,7 +228,7 @@ const FormularioTransacao = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleRemover(t.id)}
-                      className="text-red-500 hover:text-red-700 font-bold cursor-pointer"
+                      className="text-red-500 hover:text-red-700 font-bold"
                     >
                       ❌
                     </button>
