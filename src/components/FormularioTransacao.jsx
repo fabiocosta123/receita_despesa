@@ -181,7 +181,7 @@ const handleAdicionar = (e) => {
             <label className="block text-sm font-medium mb-1">Tipo</label>
             <div className="flex gap-2 mt-2">
               <button
-                className={`px-5 py-2 rounded font-bold transition-colors duration-300 ${
+                className={`px-5 py-2 rounded font-bold transition-colors duration-300 cursor-pointer ${
                   tipo === 'receita'
                     ? 'bg-blue-600 text-white'
                     : 'bg-green-400 text-gray-700 hover:bg-green-200 cursor-pointer'
@@ -203,13 +203,14 @@ const handleAdicionar = (e) => {
             </div>
 
           </div>
+           
 
-          <button
+          {/* <button
             type="submit"
             className="w-full bg-purple-600 text-white font-bold py-2 rounded hover:bg-purple-700 transition cursor-pointer"
           >
             Adicionar Transação
-          </button>
+          </button> */}
         </form>
 
                 {/* 🧾 Lista de transações */}
@@ -228,7 +229,7 @@ const handleAdicionar = (e) => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleRemover(t.id)}
-                      className="text-red-500 hover:text-red-700 font-bold"
+                      className="text-red-500 hover:text-red-700 font-bold cursor-pointer"
                     >
                       ❌
                     </button>
